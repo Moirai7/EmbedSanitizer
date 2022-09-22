@@ -29,103 +29,115 @@
 
 // Namespace which contains utility functions for manipulating data
 // race reporting metadata.
-namespace etsan {
+namespace etsan
+{
 
-static std::mutex racePrintLock;
+  static std::mutex racePrintLock;
 
-static std::mutex stackFrameLock;
+  static std::mutex stackFrameLock;
 
-// Temporary location for Race reporting metadata:
-static std::unordered_map<unsigned int, std::vector<char*>> callStack;
+  // Temporary location for Race reporting metadata:
+  static std::unordered_map<unsigned int, std::vector<char *>> callStack;
 
-// Keeps list of races
-static std::set<Race, race_compare> races;
+  // Keeps list of races
+  static std::set<Race, race_compare> races;
 
-// for printing all races in the list "races"
-void printRaces() {
-  std::string msg;
-  for (auto & race : races) {
-    race.createRaceMessage(msg);
+  // for printing all races in the list "races"
+  void printRaces()
+  {
+    std::string msg;
+    for (auto &race : races)
+    {
+      race.createRaceMessage(msg);
+    }
+
+    racePrintLock.lock();
+    std::cout << msg; // print to standard output
+    racePrintLock.unlock();
   }
 
-  racePrintLock.lock();
-  std::cout << msg; // print to standard output
-  racePrintLock.unlock();
-}
+  // Pushes a function name to a call stack of a thread
+  void pushFunction(char *funcName)
+  {
 
-// Pushes a function name to a call stack of a thread
-void pushFunction(char *funcName) {
+    unsigned int tid = (unsigned int)pthread_self();
 
-  unsigned int tid = (unsigned int)pthread_self();
-
-  stackFrameLock.lock();
-  callStack[ tid ].push_back(funcName);
-  //printf("EmbedSanitizer: function entry: %s\n", funcName);
-  stackFrameLock.unlock();
-}
-
-void popFunction(char *funcName) {
-
-  unsigned int tid = (unsigned int)pthread_self();
-
-  stackFrameLock.lock();
-  std::vector<char *> &stackFrame = callStack[tid];
-  stackFrameLock.unlock();
-
-  if (stackFrame.size() && stackFrame.back() == funcName) {
-    stackFrame.pop_back();
+    stackFrameLock.lock();
+    callStack[tid].push_back(funcName);
+    printf("EmbedSanitizer: function entry: %s\n", funcName);
+    stackFrameLock.unlock();
   }
-  else {
-    std::cout << "Something wrong with Function Stack: " << funcName << "\n";
-  }
-}
 
-std::vector<char *> getStack(unsigned int tid) {
+  void popFunction(char *funcName)
+  {
+
+    unsigned int tid = (unsigned int)pthread_self();
+
+    stackFrameLock.lock();
+    std::vector<char *> &stackFrame = callStack[tid];
+    stackFrameLock.unlock();
+
+    if (stackFrame.size() && stackFrame.back() == funcName)
+    {
+      stackFrame.pop_back();
+    }
+    else
+    {
+      std::cout << "Something wrong with Function Stack: " << funcName << "\n";
+    }
+  }
+
+  std::vector<char *> getStack(unsigned int tid)
+  {
     stackFrameLock.lock();
     std::vector<char *> &stackFrame = callStack[tid];
     stackFrameLock.unlock();
     return stackFrame;
-}
-
-// Prints the call stack of a thread when a race is found
-std::string printStack() {
-
-  unsigned int tid = (unsigned int)pthread_self();
-  std::stringstream ss;
-
-  stackFrameLock.lock();
-  std::vector<char *> &stackFrame = callStack[tid];
-  stackFrameLock.unlock();
-
-  int depth = 1;
-  for (char *func : stackFrame) {
-    std::string msg(depth, ' ');
-    depth += 4;
-    ss << msg << " '--->" << func << "(...)" << std::endl;
   }
 
-  return ss.str();
-}
+  // Prints the call stack of a thread when a race is found
+  std::string printStack()
+  {
 
-void reportRaceOnRead(int lineNo, void *objName, void *fileName) {
+    unsigned int tid = (unsigned int)pthread_self();
+    std::stringstream ss;
 
-  unsigned int tid = (unsigned int)pthread_self();
-  Race race(tid, lineNo, "read", (char *)objName, (char *)fileName);
-  race.trace = getStack(tid);
+    stackFrameLock.lock();
+    std::vector<char *> &stackFrame = callStack[tid];
+    stackFrameLock.unlock();
 
-  races.insert(race);
-  printRaces();
-}
+    int depth = 1;
+    for (char *func : stackFrame)
+    {
+      std::string msg(depth, ' ');
+      depth += 4;
+      ss << msg << " '--->" << func << "(...)" << std::endl;
+    }
 
-void reportRaceOnWrite(int lineNo, void *objName, void *fileName) {
+    return ss.str();
+  }
 
-  unsigned int tid = (unsigned int)pthread_self();
-  Race race(tid, lineNo, "write", (char *)objName, (char *)fileName);
-  race.trace = getStack(tid);
+  void reportRaceOnRead(int lineNo, void *objName, void *fileName)
+  {
 
-  races.insert(race);
-  printRaces();
-}
+    unsigned int tid = (unsigned int)pthread_self();
+    Race race(tid, lineNo, "read", (char *)objName, (char *)fileName);
+    race.trace = getStack(tid);
 
-}  // etsan
+    races.insert(race);
+    printRaces();
+  }
+
+  void reportRaceOnWrite(int lineNo, void *objName, void *fileName)
+  {
+
+    unsigned int tid = (unsigned int)pthread_self();
+    Race race(tid, lineNo, "write", (char *)objName, (char *)fileName);
+    race.trace = getStack(tid);
+
+    races.insert(race);
+    printRaces();
+  }
+
+} // etsan
 #endif
