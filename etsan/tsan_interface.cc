@@ -151,7 +151,7 @@ void __tsan_write4(
     void *objName,
     void *fileName)
 {
-  printf("Memory write at line: %p\n", CALLERPC);
+  printf("EmbedSanitizer: Memory write at line: %p\n", CALLERPC);
   if (isConcurrent)
   {
     bool isRace = ft_write(getVarState(addr, true), getThreadState());

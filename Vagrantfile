@@ -82,7 +82,8 @@ Vagrant.configure("2") do |config|
     sudo apt-get install -y make
     sudo apt-get install -y gcc-multilib g++-multilib
     sudo apt-get install -y libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi
-    sudo apt-get install -y libncurses5-dev gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
+    sudo apt-get install -y libncurses5-dev gcc-arm-linux-gnueabi g++-arm-linux-gnueabi 
+    sudo apt-get install -y qemu-system-arm qemu-efi
   SHELL
 
   config.vm.provision "make", type: "shell", inline: <<-SHELL

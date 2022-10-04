@@ -482,6 +482,7 @@ bool ThreadSanitizer::runOnFunction(Function &F)
         {
 
           // EmbedSanitizer: check for synchronizations
+          // Lan: 决定了哪里是线程开始
           EmbedSanitizer::InstrIfSynchronization(Inst);
 
           maybeMarkSanitizerLibraryCallNoBuiltin(CI, TLI);

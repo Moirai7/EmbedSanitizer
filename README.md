@@ -42,6 +42,13 @@ to run your program but it may be very slow.
 >$  mkdir build & cd build
 >$  cmake ..
 >$  make
+
+>$  ~/.embedsanitizer/bin/clang++ -o rc_lan lan_rc.cpp -std=c++11 -fsanitize=thread -I/usr/arm-linux-gnueabi/include/c++/5 -I/usr/arm-linux-gnueabi/include/c++/5/arm-linux-gnueabi -I/usr/arm-linux-gnueabi/include -latomic -static
+>$ qemu-arm ./rc_lan
+
+>$  
+>$  ~/.embedsanitizer/bin/clang++ -o threads unittests/Threads.cpp -std=c++11 -fsanitize=thread -I/usr/arm-linux-gnueabi/include/c++/5 -I/usr/arm-linux-gnueabi/include/c++/5/arm-linux-gnueabi -I/usr/arm-linux-gnueabi/include -latomic -static
+>$ qemu-arm ./threads
 ```
 
 ### Building and Installation

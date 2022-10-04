@@ -59,7 +59,7 @@
 // Particularly, it extends ThreadSanitizer to serve the
 // purpose of EmbedSanitizer: race detection for 32-bit ARM.
 namespace EmbedSanitizer {
-
+  //Lan: 决定了哪里是线程开始
   /**
    * Check if the call instruction calls one of the
    * synchronization functions (eg. pthread_create,
