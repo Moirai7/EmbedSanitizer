@@ -13,7 +13,7 @@
 #########################################################################
 
 # Variables
-DEST=${HOME}/.embedsanitizer/lib/clang/4.0.0/lib/linux/
+DEST=${HOME}/.embedsanitizer/lib/clang/4.0.1/lib/linux/
 tSanLib=libclang_rt.tsan_cxx-arm
 
 # Function to Check if a prior command was successful

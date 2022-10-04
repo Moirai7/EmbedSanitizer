@@ -35,6 +35,15 @@ to run your program but it may be very slow.
 >$ qemu-arm ./my _program.exe
 ```
 
+### BUILDING AND INSTALLATION -- LAN
+    
+>$  sudo ./install.sh 
+>$  cd tests
+>$  mkdir build & cd build
+>$  cmake ..
+>$  make
+
+
 ### Building and Installation
 ####  (a) Prerequisites
 This tool has been tested on x86_64 machine with Ubuntu 16.04.  Moreover, make sure that the following are installed in your platform.
@@ -53,16 +62,16 @@ To build and install, there is Bash script `install.sh` at the main directory of
 ```
 ### Running
 #### (a) Compiling your program
-The `install.sh` script builds LLVM/Clang with EmbedSanitizer in it and installs it  in `arm` directory. Then you can compile your program from the main directory of the project using the command format below:
+The `install.sh` script builds LLVM/Clang with EmbedSanitizer in it and installs it  in `embedsanitizer` directory. Then you can compile your program from the main directory of the project using the command format below:
 ```bash
->$  ./arm/bin/clang++ -o <executable_name> <your_program_name.cpp> -fsanitize=thread
+>$  ~/.embedsanitizer/bin/clang++ -o <executable_name> <your_program_name.cpp> -fsanitize=thread
 ```
 The compiler produces an ARM-compatible executable.
 
 **Note:**
 > Sometimes your program may not compile due to 'missing' library headers like `iostream`, `cstdlib` and `bits/config.h`. Therefore, you need to add appropriate include paths as in the example below.
 ```bash
->$  ./arm/bin/clang++ -o <executable_name> <your_program_name.cpp> -fsanitize=thread -I$(shell find /usr/arm-linux-gnueabi -name iostream | sed 's/\/iostream//g') -I$(shell find /usr/arm-linux-gnueabi/include -type d -name arm-linux-gnueabi) -I/usr/arm-linux-gnueabi/include
+>$  ~/.embedsanitizer/bin/clang++ -o <executable_name> <your_program_name.cpp> -fsanitize=thread -I$(shell find /usr/arm-linux-gnueabi -name iostream | sed 's/\/iostream//g') -I$(shell find /usr/arm-linux-gnueabi/include -type d -name arm-linux-gnueabi) -I/usr/arm-linux-gnueabi/include
 ```
 >
 

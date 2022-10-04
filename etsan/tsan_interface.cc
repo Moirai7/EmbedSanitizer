@@ -25,7 +25,7 @@ void __tsan_init()
   // create metadata for current thread
   // ThreadState& st = getThreadState();
   printf("EmbedSanitizer initializing\n");
-  printf("Parent thread: %u = %d\n", (unsigned)pthread_self(), st.tid);
+  //printf("Parent thread: %u = %d\n", (unsigned)pthread_self(), st.tid);
 }
 
 void __tsan_main_func_exit()

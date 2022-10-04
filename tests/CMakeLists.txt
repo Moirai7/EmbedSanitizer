@@ -9,7 +9,7 @@ include_directories(${GTEST_INCLUDE_DIRS})
 
 ## Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../)
-add_compile_options(-g -O0 -Wall -fprofile-arcs -ftest-coverage -fpermissive)
+add_compile_options(-g -O0 -Wall -fprofile-arcs -ftest-coverage -fpermissive -std=c++11)
 set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE ON)
 
 link_libraries(${GTEST_LIBRARIES} pthread gtest_main gcov --coverage)
