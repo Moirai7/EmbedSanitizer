@@ -36,13 +36,13 @@ to run your program but it may be very slow.
 ```
 
 ### BUILDING AND INSTALLATION -- LAN
-    
+```bash    
 >$  sudo ./install.sh 
 >$  cd tests
 >$  mkdir build & cd build
 >$  cmake ..
 >$  make
-
+```
 
 ### Building and Installation
 ####  (a) Prerequisites
