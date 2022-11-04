@@ -99,6 +99,8 @@ void __tsan_unaligned_write16(void *addr, int lineNo, void* objName, void * file
 
 a8 __tsan_atomic32_fetch_add(volatile a8 *a, a8 v, __tsan_memory_order mo);
 
+
+void __tsan_print_variables(int id, void *addr, int lineNo, void* objName);
 #ifdef __cplusplus
 }  // extern "C"
 #endif

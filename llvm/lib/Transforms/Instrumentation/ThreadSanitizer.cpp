@@ -19,8 +19,7 @@
 // The rest is handled by the run-time library.
 //===----------------------------------------------------------------------===//
 
-// LAN: 这个pass和runtime怎么连接到一起的
-// LAN: 怎么测pass
+
 #include "llvm/Transforms/Instrumentation.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallString.h"
@@ -120,6 +119,8 @@ namespace
     Function *TsanMainFuncExit; // exit of main function
     Function *TsanIgnoreBegin;
     Function *TsanIgnoreEnd;
+    // Callbacks by Lan
+    Function *TsanPrintVariables;
     // Accesses sizes are powers of two: 1, 2, 4, 8, 16.
     static const size_t kNumberOfAccessSizes = 5;
     Function *TsanRead[kNumberOfAccessSizes];
@@ -167,9 +168,14 @@ void ThreadSanitizer::initializeCallbacks(Module &M)
   IRBuilder<> IRB(M.getContext());
   AttributeSet Attr;
   Attr = Attr.addAttribute(M.getContext(), AttributeSet::FunctionIndex, Attribute::NoUnwind);
+
   // Initialize the callbacks.
   // Lan: callback func 的入口
   // 定义在runtime里面 interface.cc
+  auto& context		= M.getContext();
+	auto* helpTy	= FunctionType::get(Type::getVoidTy(context), {Type::getInt32Ty(context), Type::getInt8PtrTy(context)}, false);
+  TsanPrintVariables = dyn_cast<Function>(M.getOrInsertFunction("__tsan_print_variables", helpTy));
+
   TsanMainFuncExit = checkSanitizerInterfaceFunction(M.getOrInsertFunction(
       "__tsan_main_func_exit", Attr, IRB.getVoidTy(), nullptr));
   TsanFuncEntry = checkSanitizerInterfaceFunction(M.getOrInsertFunction(
@@ -295,7 +301,7 @@ static bool isVtableAccess(Instruction *I)
 
 // Do not instrument known races/"benign races" that come from compiler
 // instrumentatin. The user has no way of suppressing them.
-// Lan: 需要修改这里么 判断哪些address 是sensitive 怎么修改 什么是GlobalVariable
+// Lan: 需要修改这里么 判断哪些address 是sensitive 怎么修改 
 static bool shouldInstrumentReadWriteFromAddress(Value *Addr)
 {
   // Peel off GEPs and BitCasts.
@@ -335,7 +341,6 @@ bool ThreadSanitizer::addrPointsToConstantData(Value *Addr)
   // If this is a GEP, just analyze its pointer operand.
   if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(Addr))
     Addr = GEP->getPointerOperand();
-
   if (GlobalVariable *GV = dyn_cast<GlobalVariable>(Addr))
   {
     if (GV->isConstant())
@@ -379,9 +384,14 @@ void ThreadSanitizer::chooseInstructionsToInstrument(
   {
     // Lan: instruction 是不是store
     // Lan: 我们需要修改么？得看看是不是能准确得判断是不是读写
+    IRBuilder<> IRB(I);
     if (StoreInst *Store = dyn_cast<StoreInst>(I))
     {
       Value *Addr = Store->getPointerOperand();
+      IRB.CreateCall(TsanPrintVariables, {IRB.getInt32(391),
+                                  IRB.CreatePointerCast(Addr, IRB.getInt8PtrTy()),
+                                  IRB.CreateIntCast(EmbedSanitizer::getLineNumber(I), IRB.getInt8Ty(), false),
+                                  EmbedSanitizer::getObjectName(Addr, I, DL)});
       if (!shouldInstrumentReadWriteFromAddress(Addr))
         continue;
       WriteTargets.insert(Addr);
@@ -390,6 +400,10 @@ void ThreadSanitizer::chooseInstructionsToInstrument(
     {
       LoadInst *Load = cast<LoadInst>(I);
       Value *Addr = Load->getPointerOperand();
+      IRB.CreateCall(TsanPrintVariables, {IRB.getInt32(403),
+                                  IRB.CreatePointerCast(Addr, IRB.getInt8PtrTy()),
+                                  IRB.CreateIntCast(EmbedSanitizer::getLineNumber(I), IRB.getInt8Ty(), false),
+                                  EmbedSanitizer::getObjectName(Addr, I, DL)});
       if (!shouldInstrumentReadWriteFromAddress(Addr))
         continue;
       if (WriteTargets.count(Addr))
@@ -471,16 +485,19 @@ bool ThreadSanitizer::runOnFunction(Function &F)
   {
     for (auto &Inst : BB)
     {
-      if (isAtomic(&Inst))
+
+      if (isAtomic(&Inst)) {
+        llvm::errs() << Inst <<" is atomic \n";
         AtomicAccesses.push_back(&Inst);
-      else if (isa<LoadInst>(Inst) || isa<StoreInst>(Inst))
+      } else if (isa<LoadInst>(Inst) || isa<StoreInst>(Inst)) {
+        llvm::errs() << Inst <<" is load or store \n";
         LocalLoadsAndStores.push_back(&Inst);
-      else if (isa<CallInst>(Inst) || isa<InvokeInst>(Inst))
+      } else if (isa<CallInst>(Inst) || isa<InvokeInst>(Inst))
       {
+        llvm::errs() << Inst <<" is call or invoke \n";
         // EmbedSanitizer modification:
         if (CallInst *CI = dyn_cast<CallInst>(&Inst))
         {
-
           // EmbedSanitizer: check for synchronizations
           // Lan: 决定了哪里是线程开始
           EmbedSanitizer::InstrIfSynchronization(Inst);
@@ -505,7 +522,8 @@ bool ThreadSanitizer::runOnFunction(Function &F)
   // TODO Lan: 我们可以通过func名字 来确定哪些func可能race 比如irq;或者划定不同的优先级
 
   // Instrument memory accesses only if we want to report bugs in the function.
-  // TODO Lan: 这里不知道值怎么修改的 需要看看SanitizeFunction是什么
+  // Lan: 这里不知道值怎么修改的 SanitizeFunction=1
+  //llvm::errs() << ClInstrumentMemoryAccesses <<" looking for "<<SanitizeFunction<<" \n";
   if (ClInstrumentMemoryAccesses && SanitizeFunction)
     for (auto Inst : AllLoadsAndStores)
     {
@@ -529,6 +547,7 @@ bool ThreadSanitizer::runOnFunction(Function &F)
   // Lan: 不知道这些Attribute怎么定义的
   if (F.hasFnAttribute("sanitize_thread_no_checking_at_run_time"))
   {
+    llvm::errs() << EmbedSanitizer::getFuncName(F) << " " << F.hasFnAttribute("sanitize_thread_no_checking_at_run_time")<<"\n";
     assert(!F.hasFnAttribute(Attribute::SanitizeThread));
     if (HasCalls)
       InsertRuntimeIgnores(F);

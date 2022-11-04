@@ -412,3 +412,20 @@ void __tsan_func_exit(void *funcName)
 {
   etsan::popFunction((char *)funcName);
 }
+
+//==============================
+// Lan: funcs for debug
+//==============================
+
+void __tsan_print_variables(
+    int id,
+    void *addr,
+    int lineNo,
+    void *objName) 
+{
+  std::stringstream ss;
+  ss << "  Report ID: "     << id        << "\n"  ;
+  ss << "  At line number: "     << lineNo        << "\n"  ;
+  ss << "  ADDR: "     <<   addr << " OBJ: \"" << objName  << "\"     \n"  ;
+  printf("EmbedSanitizer: print var: %s\n", ss.str().c_str());
+}

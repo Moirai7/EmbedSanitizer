@@ -89,8 +89,7 @@ public:
     ss << "\033[1;33m Call stack:   \033[m              \n"  ;
     ss << printStack();
     ss << "=============================================\n"  ;
-
-    msg.append( ss.str() );
+    msg.append(ss.str());
     isMessageCreated = true;
     return false; // not printed yet
   }

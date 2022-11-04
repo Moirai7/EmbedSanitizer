@@ -52,7 +52,7 @@ namespace etsan
     }
 
     racePrintLock.lock();
-    printf("EmbedSanitizer: races: %s\n", msg);// print to standard output
+    printf("EmbedSanitizer: races: %s\n", msg.c_str());// print to standard output
     racePrintLock.unlock();
   }
 
